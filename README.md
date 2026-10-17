@@ -90,4 +90,5 @@ prek install                # lint and format on commit (prek run --all-files to
 ```
 
 Releases: bump `version` in `Cargo.toml`, then push a `vX.Y.Z` tag. CI
-publishes the crate and the Python wheels.
+publishes the crate and the Python wheels using trusted publishing (no
+stored tokens).

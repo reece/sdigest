@@ -65,16 +65,18 @@ jobs:
           path: dist
 
   # workflow_dispatch builds wheels without publishing, to try the build matrix.
+  # Trusted publishing: PyPI trusts this workflow, so no token secret is stored.
   publish:
     if: github.event_name == 'push'
     needs: [check-version, ci, wheels, sdist]
     runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v8.0.1
         with:
           path: dist
           merge-multiple: true
       - uses: astral-sh/setup-uv@v10.2.0
-      - run: uv publish dist/*
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+      - run: uv publish --trusted-publishing always dist/*
