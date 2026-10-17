@@ -27,6 +27,7 @@ use sdigest::{
 /// With no FILE, names are read from stdin, one per line (or NUL-separated
 /// with -0). With --check and no FILE, the fingerprint list is read from stdin.
 #[derive(Parser)]
+#[command(version)]
 struct Args {
     /// Stringency level 0-9 [default: 5, i.e. 1% coverage]
     #[arg(short, long, value_parser = clap::value_parser!(u8).range(0..LEVELS.len() as i64))]
