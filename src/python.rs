@@ -1,5 +1,6 @@
 //! Python bindings: `sdigest.sdigest(source, level=None, *, coverage=None)`.
 
+use std::ffi::OsString;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 
@@ -97,10 +98,26 @@ fn may_equal(a: &str, b: &str) -> PyResult<Option<bool>> {
     Ok(parse(a)?.may_equal(&parse(b)?))
 }
 
+/// Entry point for the `sdigest` script: the same command line as the Rust
+/// binary. Returns the exit status.
+#[pyfunction]
+fn _main(py: Python<'_>) -> PyResult<u8> {
+    // Python defers SIGINT until control returns to the interpreter, which
+    // would make Ctrl-C ineffective during a long run. Restore the default.
+    let signal = py.import("signal")?;
+    signal.call_method1(
+        "signal",
+        (signal.getattr("SIGINT")?, signal.getattr("SIG_DFL")?),
+    )?;
+    let argv: Vec<OsString> = py.import("sys")?.getattr("argv")?.extract()?;
+    Ok(py.detach(|| crate::cli::run(argv)))
+}
+
 #[pymodule]
 #[pyo3(name = "sdigest")]
 fn sdigest_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sdigest, m)?)?;
     m.add_function(wrap_pyfunction!(may_equal, m)?)?;
+    m.add_function(wrap_pyfunction!(_main, m)?)?;
     Ok(())
 }

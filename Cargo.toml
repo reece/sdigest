@@ -15,7 +15,7 @@ include = ["/src", "/tests/cli.rs", "/doc", "/README.md", "/LICENSE"]
 [features]
 default = ["cli"]
 cli = ["dep:anyhow", "dep:clap", "dep:indicatif", "dep:rayon"]
-python = ["dep:pyo3"]
+python = ["cli", "dep:pyo3"]
 
 [[bin]]
 name = "sdigest"

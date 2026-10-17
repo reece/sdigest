@@ -16,6 +16,8 @@ use std::ops::Range;
 use std::path::Path;
 use std::str::FromStr;
 
+#[cfg(feature = "cli")]
+pub mod cli;
 #[cfg(feature = "python")]
 mod python;
 

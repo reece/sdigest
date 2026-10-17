@@ -13,6 +13,9 @@ def sdigest(
     default 5) or a coverage percent (0-100).
     """
 
+def _main() -> int:
+    """Entry point for the `sdigest` command."""
+
 def may_equal(a: str, b: str) -> bool | None:
     """False if fingerprints prove the content differs, True if it may be
     identical, None if they aren't comparable."""

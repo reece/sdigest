@@ -22,6 +22,9 @@ classifiers = [
   "Topic :: System :: Filesystems",
 ]
 
+[project.scripts]
+sdigest = "sdigest:_main"
+
 [project.urls]
 Homepage = "https://github.com/reece/sdigest"
 Issues = "https://github.com/reece/sdigest/issues"

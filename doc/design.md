@@ -120,8 +120,9 @@ Levels are only a shorthand. Fingerprints record the coverage, so `-l 5` and
 | Path | Role |
 |---|---|
 | `src/lib.rs` | `Coverage`, `plan`, `digest_reader`, `digest_path`, `Fingerprint` (parse, format, `may_equal`) |
-| `src/main.rs` | CLI (`cli` feature, default): parallel over files (rayon), progress bar, summary, `--check`, names on stdin |
-| `src/python.rs` | pyo3 module `sdigest` (`sdigest`, `may_equal`), enabled with the `python` feature |
+| `src/cli.rs` | CLI (`cli` feature, default): parallel over files (rayon), progress bar, summary, `--check`, names on stdin |
+| `src/main.rs` | Rust binary: calls `cli::run` |
+| `src/python.rs` | pyo3 module `sdigest` (`sdigest`, `may_equal`) and the `sdigest` script entry point, which also calls `cli::run`; enabled with the `python` feature |
 | `tests/cli.rs`, `tests/python/` | CLI and Python tests; golden digests live in the unit tests |
 
 Python accepts a path (it releases the GIL and reads the file in Rust) or any

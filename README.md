@@ -40,9 +40,13 @@ same.
 ## Install
 
 ```sh
-cargo install sdigest      # CLI
-pip install sdigest        # Python module
+uvx sdigest FILE...        # run without installing (prebuilt wheels, no Rust needed)
+uv tool install sdigest    # install the sdigest command
+pip install sdigest        # Python module and command
+cargo install sdigest      # build the command from source
 ```
+
+The `sdigest` command is identical however it is installed.
 
 ## Use
 
