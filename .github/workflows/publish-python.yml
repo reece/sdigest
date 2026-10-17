@@ -9,19 +9,6 @@ permissions:
   contents: read
 
 jobs:
-  check-version:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - name: Check that the tag matches the Cargo.toml version
-        run: |
-          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-          if [ "$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::tag $GITHUB_REF_NAME does not match Cargo.toml version $version"
-            exit 1
-          fi
-
   ci:
     uses: ./.github/workflows/ci.yml
 
@@ -41,6 +28,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Stamp version from tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: .github/scripts/stamp-version
       - uses: PyO3/maturin-action@v1.51.0
         with:
           target: ${{ matrix.target }}
@@ -55,6 +46,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Stamp version from tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: .github/scripts/stamp-version
       - uses: PyO3/maturin-action@v1.51.0
         with:
           command: sdist
@@ -68,7 +63,7 @@ jobs:
   # Trusted publishing: PyPI trusts this workflow, so no token secret is stored.
   publish:
     if: github.event_name == 'push'
-    needs: [check-version, ci, wheels, sdist]
+    needs: [ci, wheels, sdist]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

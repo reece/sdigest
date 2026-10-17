@@ -24,6 +24,9 @@ mod python;
 /// Algorithm tag. Bump if the plan, block size, or hash input ever changes.
 pub const VERSION: &str = "sd1";
 
+/// Package version, from the git tag (see build.rs).
+pub const PKG_VERSION: &str = env!("SDIGEST_VERSION");
+
 /// Sample block size. Part of the algorithm, so it is fixed, not tunable.
 pub const BLOCK_SIZE: u64 = 64 * 1024;
 

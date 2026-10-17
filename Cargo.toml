@@ -1,6 +1,7 @@
 [package]
 name = "sdigest"
-version = "0.2.0"
+# Placeholder: releases are stamped from the git tag by CI (see build.rs).
+version = "0.0.0"
 edition = "2024"
 rust-version = "1.88"
 authors = ["Reece Hart <reecehart@gmail.com>"]
@@ -10,7 +11,7 @@ repository = "https://github.com/reece/sdigest"
 readme = "README.md"
 keywords = ["digest", "fingerprint", "hash", "dedup", "blake3"]
 categories = ["command-line-utilities", "filesystem"]
-include = ["/src", "/tests/cli.rs", "/doc", "/README.md", "/LICENSE"]
+include = ["/build.rs", "/src", "/tests/cli.rs", "/doc", "/README.md", "/LICENSE"]
 
 [features]
 default = ["cli"]

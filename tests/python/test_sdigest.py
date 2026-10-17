@@ -94,6 +94,13 @@ def run_both(*args, **kwargs):
     return script, binary
 
 
+def test_version_matches_script():
+    import sdigest as module
+
+    out = subprocess.run([SCRIPT, "--version"], capture_output=True, text=True, check=True).stdout
+    assert out == f"sdigest {module.__version__}\n"
+
+
 def test_script_is_installed():
     assert SCRIPT is not None
 

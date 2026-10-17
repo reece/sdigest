@@ -119,5 +119,6 @@ fn sdigest_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sdigest, m)?)?;
     m.add_function(wrap_pyfunction!(may_equal, m)?)?;
     m.add_function(wrap_pyfunction!(_main, m)?)?;
+    m.add("__version__", crate::PKG_VERSION)?;
     Ok(())
 }

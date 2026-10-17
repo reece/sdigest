@@ -8,18 +8,6 @@ permissions:
   contents: read
 
 jobs:
-  check-version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - name: Check that the tag matches the Cargo.toml version
-        run: |
-          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-          if [ "$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::tag $GITHUB_REF_NAME does not match Cargo.toml version $version"
-            exit 1
-          fi
-
   ci:
     uses: ./.github/workflows/ci.yml
 
@@ -28,7 +16,7 @@ jobs:
   # version must be published by hand; versions already on crates.io are
   # skipped.
   publish:
-    needs: [check-version, ci]
+    needs: [ci]
     runs-on: ubuntu-latest
     environment: crates-io
     permissions:
@@ -46,9 +34,11 @@ jobs:
       - if: steps.exists.outputs.published != 'true'
         run: rustup toolchain install stable --profile minimal && rustup default stable
       - if: steps.exists.outputs.published != 'true'
+        run: .github/scripts/stamp-version
+      - if: steps.exists.outputs.published != 'true'
         uses: rust-lang/crates-io-auth-action@v1.0.5
         id: auth
       - if: steps.exists.outputs.published != 'true'
-        run: cargo publish --locked
+        run: cargo publish --locked --allow-dirty
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

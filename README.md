@@ -93,6 +93,9 @@ uv run pytest               # builds the Python extension and runs Python tests
 prek install                # lint and format on commit (prek run --all-files to run now)
 ```
 
-Releases: bump `version` in `Cargo.toml`, then push a matching `X.Y.Z` tag (no `v`). CI
-publishes the crate and the Python wheels using trusted publishing (no
-stored tokens).
+Releases: push a semver tag, e.g. `git tag 1.2.3 && git push --tags` (no
+`v`; pre-releases look like `1.2.3-rc.1`). The tag is the only source of
+truth for the version: `Cargo.toml` holds `0.0.0`, CI writes the tag into it
+before building, and CI publishes the crate and the Python wheels using
+trusted publishing (no stored tokens). Development builds describe
+themselves relative to the latest tag, e.g. `0.2.1-dev.3+g4b551b3`.

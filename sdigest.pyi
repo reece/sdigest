@@ -1,6 +1,8 @@
 from os import PathLike
 from typing import BinaryIO
 
+__version__: str
+
 def sdigest(
     source: str | PathLike[str] | BinaryIO,
     level: int | None = None,
