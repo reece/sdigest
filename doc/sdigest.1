@@ -1,0 +1,169 @@
+'\" t
+.TH SDIGEST 1 2026-10-17 sdigest "User Commands"
+.SH NAME
+sdigest \- fast sparse digests of seekable files
+.SH SYNOPSIS
+.B sdigest
+.RB [ \-l
+.IR level " | " \fB\-c\fP " " coverage ]
+.RB [ \-0 ]
+.RB [ \-q ]
+.RI [ file ...]
+.br
+.B sdigest \-k
+.RB [ \-q ]
+.RI [ list ...]
+.SH DESCRIPTION
+.B sdigest
+fingerprints each
+.I file
+by hashing its size and a deterministic sample of its content with BLAKE3.
+Sampling a few blocks is enough to tell most non-identical files apart,
+at a small fraction of the cost of a full digest such as
+.BR sha512sum (1).
+.PP
+The sample always includes the first and last 64\~KiB, plus evenly spaced
+blocks up to the requested coverage.
+Files no larger than 128\~KiB are hashed whole.
+.PP
+With no
+.IR file ,
+names are read from standard input, one per line.
+File content cannot be read from standard input, because it is not seekable.
+Files are processed in parallel; output keeps the input order.
+.SH INTERPRETATION
+An sdigest is evidence that content differs, never proof that it is the same.
+.TP
+.B Different sizes
+The content differs.
+This is certain.
+.TP
+.B Same size and coverage, different digests
+The content differs.
+This is certain.
+.TP
+.B Same size and coverage, equal digests
+The content
+.I may
+be identical.
+Unrelated files (for example, different recordings) almost always differ at
+level 0.
+Small edits that keep the size are missed if they fall between samples.
+Sparse digests are not collision-resistant against deliberate tampering.
+Confirm with
+.BR cmp (1)
+when a false match would be costly.
+.TP
+.B Same size, different coverage
+Usually no conclusion.
+The exception is when both coverages sample the same blocks (always true for
+small files); the Python
+.B may_equal()
+function checks this.
+.SH OPTIONS
+.TP
+.BI \-l ", " \-\-level " level"
+Stringency 0\(en9 (default 5).
+Levels map to coverage on a roughly logarithmic scale:
+.RS
+.PP
+.TS
+l l l l l l l l l l l.
+level	0	1	2	3	4	5	6	7	8	9
+%	0	0.01	0.03	0.1	0.3	1	3	10	30	100
+.TE
+.RE
+.TP
+.BI \-c ", " \-\-coverage " percent"
+Sample
+.I percent
+(0\(en100) of the content instead of using a level.
+0 hashes the size plus the first and last blocks; 100 hashes every byte.
+.TP
+.BR \-k ", " \-\-check
+Read
+.RB \(lq "fingerprint  path" \(rq
+lines from each
+.I list
+(or standard input), re-check each path at its recorded coverage, and print
+.RI \(lq path :
+.BR OK \(rq
+or
+.RI \(lq path :
+.BR FAILED \(rq.
+.TP
+.BR \-0 ", " \-\-null
+File names on standard input are separated by NUL, as produced by
+.BR "find \-print0" .
+.TP
+.BR \-q ", " \-\-quiet
+Do not show the progress bar or the summary.
+.TP
+.BR \-h ", " \-\-help
+Print help.
+.SH OUTPUT
+One line per file, in the style of
+.BR sha512sum (1):
+.PP
+.RS
+.EX
+sd1:\fIsize\fP:\fIcoverage\fP:\fIblake3\fP  \fIpath\fP
+.EE
+.RE
+.PP
+.B sd1
+is the algorithm version.
+.I coverage
+is recorded rather than the level, so
+.B \-l 5
+and
+.B \-c 1
+give identical output.
+Unless
+.B \-q
+is given, a progress bar and a summary are written to standard error.
+The summary shows the number of files, total size, elapsed time, effective
+throughput, coverage, and bytes actually read.
+.SH EXIT STATUS
+.TP
+.B 0
+All files were fingerprinted (or, with
+.BR \-k ,
+all matched).
+.TP
+.B 1
+A file could not be read, a fingerprint did not match, or another error occurred.
+.TP
+.B 2
+Invalid usage.
+.SH EXAMPLES
+Fingerprint an audio collection at level 0 and save the result:
+.PP
+.RS
+.EX
+find /music \-type f \-print0 | sdigest \-0 \-l 0 > music.sd
+.EE
+.RE
+.PP
+List fingerprints shared by more than one file (candidate duplicates):
+.PP
+.RS
+.EX
+cut \-d\(aq \(aq \-f1 music.sd | sort | uniq \-d
+.EE
+.RE
+.PP
+Later, check which files have changed:
+.PP
+.RS
+.EX
+sdigest \-k music.sd | grep FAILED
+.EE
+.RE
+.SH SEE ALSO
+.BR cmp (1),
+.BR sha512sum (1),
+.BR b3sum (1)
+.PP
+.I doc/design.md
+in https://github.com/reece/sdigest describes the design and rationale.

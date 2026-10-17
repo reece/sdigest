@@ -1,0 +1,38 @@
+[package]
+name = "sdigest"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+authors = ["Reece Hart <reecehart@gmail.com>"]
+description = "Fast, tunable sparse digests: fingerprint files by hashing their size and a sample of their content"
+license = "MIT"
+repository = "https://github.com/reece/sdigest"
+readme = "README.md"
+keywords = ["digest", "fingerprint", "hash", "dedup", "blake3"]
+categories = ["command-line-utilities", "filesystem"]
+include = ["/src", "/tests/cli.rs", "/doc", "/README.md", "/LICENSE"]
+
+[features]
+default = ["cli"]
+cli = ["dep:anyhow", "dep:clap", "dep:indicatif", "dep:rayon"]
+python = ["dep:pyo3"]
+
+[[bin]]
+name = "sdigest"
+path = "src/main.rs"
+required-features = ["cli"]
+
+[dependencies]
+blake3 = "1.8.7"
+anyhow = { version = "1.0.104", optional = true }
+clap = { version = "4.6.7", features = ["derive"], optional = true }
+indicatif = { version = "0.18.6", optional = true }
+pyo3 = { version = "0.30.1", features = ["extension-module", "abi3-py310"], optional = true }
+rayon = { version = "1.12.0", optional = true }
+
+[dev-dependencies]
+tempfile = "3.27.0"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

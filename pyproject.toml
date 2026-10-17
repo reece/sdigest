@@ -1,0 +1,49 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "sdigest"
+description = "Fast, tunable sparse digests: fingerprint files by hashing their size and a sample of their content"
+authors = [{ name = "Reece Hart", email = "reecehart@gmail.com" }]
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["version"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Rust",
+  "Topic :: System :: Filesystems",
+]
+
+[project.urls]
+Homepage = "https://github.com/reece/sdigest"
+Issues = "https://github.com/reece/sdigest/issues"
+
+[dependency-groups]
+dev = ["maturin>=1.7,<2", "pytest>=8"]
+
+[tool.maturin]
+features = ["python"]
+no-default-features = true
+bindings = "pyo3"
+include = [{ path = "sdigest.pyi", format = "sdist" }]
+
+[tool.uv]
+# Rebuild the extension when Rust sources change.
+cache-keys = [{ file = "pyproject.toml" }, { file = "Cargo.toml" }, { file = "src/**/*.rs" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
