@@ -89,6 +89,6 @@ uv run pytest               # builds the Python extension and runs Python tests
 prek install                # lint and format on commit (prek run --all-files to run now)
 ```
 
-Releases: bump `version` in `Cargo.toml`, then push a `vX.Y.Z` tag. CI
+Releases: bump `version` in `Cargo.toml`, then push a matching `X.Y.Z` tag (no `v`). CI
 publishes the crate and the Python wheels using trusted publishing (no
 stored tokens).
