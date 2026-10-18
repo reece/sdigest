@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "wdc-wd80emaz-00wjta0-0001",
+  "identity": {
+    "model": "WDC WD80EMAZ-00WJTA0",
+    "transport": "usb",
+    "usb_driver": "usb-storage",
+    "link": "5000 Mb/s",
+    "rotational": true,
+    "queue_depth": 1,
+    "scheduler": "mq-deadline",
+    "layers": [
+      "part",
+      "disk"
+    ],
+    "fstype": "ext4",
+    "size": "7.3T"
+  }
+}

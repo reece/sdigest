@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "expansion-desk-0001",
+  "identity": {
+    "model": "Expansion Desk",
+    "transport": "usb",
+    "usb_driver": "uas",
+    "link": "5000 Mb/s",
+    "rotational": true,
+    "queue_depth": 30,
+    "scheduler": "mq-deadline",
+    "layers": [
+      "part",
+      "disk"
+    ],
+    "fstype": "ext4",
+    "size": "4.5T"
+  }
+}

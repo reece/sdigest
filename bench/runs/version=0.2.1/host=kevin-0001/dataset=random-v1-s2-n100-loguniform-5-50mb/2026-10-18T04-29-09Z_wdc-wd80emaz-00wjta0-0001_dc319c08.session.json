@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "session_id": "dc319c08",
+  "started": "2026-10-18T04:29:09Z",
+  "label": null,
+  "argv": [
+    "run",
+    "--ref",
+    "0.2.1",
+    "--config",
+    "bench/configs/firstpass.toml",
+    "--data-dir",
+    "/mnt/biocommons/sdbench"
+  ],
+  "sweep": {
+    "dataset": "random --seed 2 --n-files 100 --dist loguniform --min-mb 5 --max-mb 50",
+    "levels": [
+      9
+    ],
+    "cache": "cold"
+  },
+  "harness_commit": "9e5100a71e82bba2d666d2c76a226dbd1a1d3804",
+  "harness_dirty": false,
+  "sdigest_commit": "c83d4797b51e1bbebc6d5d9f8cada2475da8cccd",
+  "sdigest_describe": "0.2.1-0-gc83d479",
+  "host": "kevin-0001",
+  "host_details": {
+    "kernel_release": "7.0.0-38-generic",
+    "governor": "powersave",
+    "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+    "python": "3.14.4"
+  },
+  "device": "wdc-wd80emaz-00wjta0-0001",
+  "device_identity": {
+    "model": "WDC WD80EMAZ-00WJTA0",
+    "transport": "usb",
+    "usb_driver": "usb-storage",
+    "link": "5000 Mb/s",
+    "rotational": true,
+    "queue_depth": 1,
+    "scheduler": "mq-deadline",
+    "layers": [
+      "part",
+      "disk"
+    ],
+    "fstype": "ext4",
+    "size": "7.3T"
+  },
+  "data_dir": "/mnt/biocommons/sdbench"
+}

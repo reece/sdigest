@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "random-v1-s2-n100-loguniform-5-50mb",
+  "generator": "random",
+  "generator_version": 1,
+  "spec": "random --seed 2 --n-files 100 --dist loguniform --min-mb 5 --max-mb 50",
+  "params": {
+    "seed": 2,
+    "n_files": 100,
+    "dist": "loguniform",
+    "min_mb": 5.0,
+    "max_mb": 50.0
+  },
+  "n_files": 100,
+  "total_bytes": 2052904528,
+  "size_bytes": {
+    "min": 5031226,
+    "p25": 8709949,
+    "median": 17289268,
+    "p75": 31946222,
+    "max": 47849008
+  }
+}

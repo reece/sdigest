@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "session_id": "0059a231",
+  "started": "2026-10-18T02:57:49Z",
+  "label": null,
+  "argv": [
+    "run",
+    "--ref",
+    "0.2.1",
+    "--config",
+    "bench/configs/firstpass.toml",
+    "--data-dir",
+    "/home/reece/tmp/sdbench"
+  ],
+  "sweep": {
+    "dataset": "random --seed 2 --n-files 100 --dist loguniform --min-mb 5 --max-mb 50",
+    "levels": [
+      9
+    ],
+    "cache": "cold"
+  },
+  "harness_commit": "36bccb69aff6a589f69108a687beeb877147a0f4",
+  "harness_dirty": false,
+  "sdigest_commit": "c83d4797b51e1bbebc6d5d9f8cada2475da8cccd",
+  "sdigest_describe": "0.2.1-0-gc83d479",
+  "host": "kevin-0001",
+  "host_details": {
+    "kernel_release": "7.0.0-38-generic",
+    "governor": "powersave",
+    "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+    "python": "3.14.4"
+  },
+  "device": "samsung-ssd-970-evo-plus-0001",
+  "device_identity": {
+    "model": "Samsung SSD 970 EVO Plus 2TB",
+    "transport": "nvme",
+    "usb_driver": null,
+    "link": "8.0 GT/s PCIe x4",
+    "rotational": false,
+    "queue_depth": null,
+    "scheduler": "none",
+    "layers": [
+      "part",
+      "disk"
+    ],
+    "fstype": "ext4",
+    "size": "1.8T"
+  },
+  "data_dir": "/home/reece/tmp/sdbench"
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "session_id": "390c1be9",
+  "started": "2026-10-18T04:44:48Z",
+  "label": null,
+  "argv": [
+    "run",
+    "--ref",
+    "0.2.1",
+    "--config",
+    "bench/configs/firstpass.toml",
+    "--data-dir",
+    "/mnt/backup6/sdbench"
+  ],
+  "sweep": {
+    "dataset": "random --seed 1 --n-files 1000 --dist loguniform --min-mb 5 --max-mb 50",
+    "levels": [
+      0,
+      5
+    ],
+    "cache": "cold"
+  },
+  "harness_commit": "9e5100a71e82bba2d666d2c76a226dbd1a1d3804",
+  "harness_dirty": false,
+  "sdigest_commit": "c83d4797b51e1bbebc6d5d9f8cada2475da8cccd",
+  "sdigest_describe": "0.2.1-0-gc83d479",
+  "host": "kevin-0001",
+  "host_details": {
+    "kernel_release": "7.0.0-38-generic",
+    "governor": "powersave",
+    "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+    "python": "3.14.4"
+  },
+  "device": "expansion-hdd-0001",
+  "device_identity": {
+    "model": "Expansion HDD",
+    "transport": "usb",
+    "usb_driver": "uas",
+    "link": "5000 Mb/s",
+    "rotational": true,
+    "queue_depth": 30,
+    "scheduler": "mq-deadline",
+    "layers": [
+      "crypt",
+      "part",
+      "disk"
+    ],
+    "fstype": "ext4",
+    "size": "20T"
+  },
+  "data_dir": "/mnt/backup6/sdbench"
+}
