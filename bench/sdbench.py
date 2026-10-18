@@ -325,6 +325,14 @@ def lsblk_chain(source):
         node = kids[0]
 
 
+def read_ahead_kb(name):
+    """Readahead of a block device; a partition uses its disk's queue."""
+    p = Path("/sys/class/block", name).resolve()
+    if (p / "partition").exists():
+        p = p.parent
+    return int(read(p / "queue/read_ahead_kb", "0"))
+
+
 def usb_link_mbps(sysdev):
     p = Path(sysdev).resolve()
     while p != p.parent:
@@ -368,7 +376,7 @@ def device_info(data_dir):
         "size": disk.get("size"),
     }
     slug = re.sub(r"[^a-z0-9]+", "-", model.lower()).strip("-")[:24].strip("-")
-    return assign_id("devices", slug, identity), identity, name
+    return assign_id("devices", slug, identity), identity, name, layers[0]["name"]
 
 
 # ---------------------------------------------------------------- building sdigest
@@ -508,7 +516,7 @@ def cmd_run(a):
     cfg = tomllib.loads(Path(a.config).read_text())
     build = build_sdigest(a.ref)
     host = assign_id("hosts", host_identity()["hostname"], host_identity())
-    device, dev_identity, disk = device_info(a.data_dir)
+    device, dev_identity, disk, top = device_info(a.data_dir)
     rotational = dev_identity["rotational"]
     runs_root = BENCH / ("runs" if build.release else "runs-dev")
     harness = git("rev-parse", "HEAD")
@@ -570,6 +578,8 @@ def cmd_run(a):
         with open(out_dir / f"{stem}.jsonl", "a") as out:
             for idx, (rep, level, nthreads) in enumerate(order):
                 rec = run_one(build, paths, sizes, names, level, nthreads, cache, disk, rotational)
+                # A tunable, like threads: the readahead of the device the filesystem is on.
+                rec["read_ahead_kb"] = read_ahead_kb(top)
                 rec = {
                     "schema_version": SCHEMA_VERSION,
                     "run_id": uuid.uuid4().hex,
