@@ -203,7 +203,7 @@ impl FromStr for Fingerprint {
         }
         let size = size.parse().map_err(|_| bad())?;
         let coverage: Coverage = coverage.parse()?;
-        if hex.len() != 64 {
+        if hex.len() != 64 || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
             return Err(bad());
         }
         let mut digest = [0u8; 32];
@@ -437,6 +437,16 @@ mod tests {
         assert_eq!(s.parse::<Fingerprint>().unwrap(), f);
         assert!("sd2:1:0:00".parse::<Fingerprint>().is_err());
         assert!("sd1:1:0:zz".parse::<Fingerprint>().is_err());
+    }
+
+    #[test]
+    fn rejects_non_hex_digests_without_panicking() {
+        // 64 bytes, but slicing at byte 2 would split the first '€'.
+        let euro = format!("sd1:1:0:a{}", "€".repeat(21));
+        assert!(euro.parse::<Fingerprint>().is_err());
+        // u8::from_str_radix accepts a leading '+'.
+        let plus = format!("sd1:1:0:{}", "+f".repeat(32));
+        assert!(plus.parse::<Fingerprint>().is_err());
     }
 
     #[test]

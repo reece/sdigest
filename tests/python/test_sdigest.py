@@ -73,6 +73,13 @@ def test_errors(tmp_path):
         may_equal("nope", "nope")
 
 
+@pytest.mark.parametrize("digest", ["a" + "€" * 21, "+f" * 32])
+def test_may_equal_rejects_non_hex_digest(digest):
+    good = sdigest(io.BytesIO(b"x"), level=0)
+    with pytest.raises(ValueError):
+        may_equal(f"sd1:1:0:{digest}", good)
+
+
 def test_python_exceptions_propagate():
     class Boom(io.BytesIO):
         def read(self, n=-1):
