@@ -8,10 +8,14 @@ sdigest \- fast sparse digests of seekable files
 .IR level " | " \fB\-c\fP " " coverage ]
 .RB [ \-0 ]
 .RB [ \-q ]
+.RB [ \-t
+.IR threads ]
 .RI [ file ...]
 .br
 .B sdigest \-k
 .RB [ \-q ]
+.RB [ \-t
+.IR threads ]
 .RI [ list ...]
 .SH DESCRIPTION
 .B sdigest
@@ -30,7 +34,10 @@ With no
 .IR file ,
 names are read from standard input, one per line.
 File content cannot be read from standard input, because it is not seekable.
-Files are processed in parallel; output keeps the input order.
+Files are read in parallel; output keeps the input order.
+The number of threads, each reading one file at a time, is chosen for each
+storage device (see
+.BR \-t ).
 .SH INTERPRETATION
 An sdigest is evidence that content differs, never proof that it is the same.
 .TP
@@ -99,6 +106,33 @@ File names on standard input are separated by NUL, as produced by
 .BR \-q ", " \-\-quiet
 Do not show the progress bar or the summary.
 .TP
+.BI \-t ", " \-\-threads " threads"
+Threads, each reading one file at a time, or
+.B auto
+(the default).
+With
+.BR auto ,
+on Linux, the number is chosen for each storage device from its queue depth,
+whether it is rotational, and the coverage:
+.RS
+.TP
+Coverage below 10% (seek-bound)
+the device's queue depth, at most 16.
+.TP
+Coverage 10% or more, rotational device
+1: interleaving files on a hard disk only adds seeks.
+.TP
+Coverage 10% or more, other devices
+the device's queue depth, at most one per CPU.
+.TP
+Storage that can't be identified (network filesystems, other systems)
+one per CPU.
+.RE
+.IP
+The summary reports the choice.
+Files on different devices are read concurrently.
+The thread count never changes the fingerprints.
+.TP
 .BR \-h ", " \-\-help
 Print help.
 .TP
@@ -126,7 +160,7 @@ Unless
 .B \-q
 is given, a progress bar and a summary are written to standard error.
 The summary shows the number of files, total size, elapsed time, effective
-throughput, coverage, and bytes actually read.
+throughput, coverage, bytes actually read, and the thread count chosen.
 .SH EXIT STATUS
 .TP
 .B 0

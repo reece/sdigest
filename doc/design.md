@@ -115,12 +115,48 @@ sd1:<size>:<coverage>:<blake3-256 hex>
 Levels are only a shorthand. Fingerprints record the coverage, so `-l 5` and
 `-c 1` give identical output. The default is level 5.
 
+### Parallelism
+
+The CLI reads files in parallel; each thread reads one file at a time, in
+plan order. The best thread count depends on the storage and on how sparse
+the reads are ([#3](https://github.com/reece/sdigest/issues/3),
+benchmark 3), so `--threads auto` (the default) chooses it per device:
+
+| | Sparse (coverage < 10%) | Dense (coverage ≥ 10%) |
+|---|---|---|
+| Identified device | `min(queue depth, 16)` | rotational: 1; otherwise `min(queue depth, CPUs)` |
+| Unidentified | CPUs | CPUs |
+
+* **Sparse reads are bound by seeks.** They gain from many reads in flight
+  on devices that can queue them: up to 4× on UAS hard disks and 3.8× on
+  NVMe. They're capped at 16 because beyond that, hard disks gained only
+  7–20% more while sdigest held most of the disk's command queue, delaying
+  other work on that disk.
+* **Dense reads on a hard disk are fastest one file at a time.**
+  Interleaving files only adds seeks; 64 threads cost 20–46%. On SSDs,
+  hashing becomes the limit, so dense reads use one thread per CPU.
+* **A queue depth of 1** (for example, USB disks on the old `usb-storage`
+  driver) gives 1 throughout. Any parallelism was 15–46% slower there.
+* **Detection** (Linux only) follows the file's device through sysfs:
+  partitions to their disk, dm-crypt, LVM and md to the disks beneath. It
+  reads `queue/rotational` and `device/queue_depth`, or `queue/nr_requests`
+  for NVMe. With several disks it takes the worst case. Anything else,
+  including network filesystems, FUSE and other systems, keeps one thread
+  per CPU, the behaviour before detection existed.
+* Files on different devices are read concurrently. On one device, files
+  needing different counts (mixed coverages in a `--check` list) are read
+  one group after another. `--threads N` overrides everything.
+
+The 10% boundary between sparse and dense is an estimate: benchmarks
+covered levels 0 and 5 (sparse) and 9 (dense), not levels 6–8.
+
 ### Components
 
 | Path | Role |
 |---|---|
 | `src/lib.rs` | `Coverage`, `plan`, `digest_reader`, `digest_path`, `Fingerprint` (parse, format, `may_equal`) |
-| `src/cli.rs` | CLI (`cli` feature, default): parallel over files (rayon), progress bar, summary, `--check`, names on stdin |
+| `src/cli.rs` | CLI (`cli` feature, default): parallel over files (one rayon pool per device), progress bar, summary, `--check`, names on stdin |
+| `src/medium.rs` | Storage detection (Linux sysfs) and the thread-count policy |
 | `src/main.rs` | Rust binary: calls `cli::run` |
 | `src/python.rs` | pyo3 module `sdigest` (`sdigest`, `may_equal`) and the `sdigest` script entry point, which also calls `cli::run`; enabled with the `python` feature |
 | `tests/cli.rs`, `tests/python/` | CLI and Python tests; golden digests live in the unit tests |
@@ -210,8 +246,11 @@ about the link's limit.)
 
 * Per-file byte cap for very large files (e.g. 1 TB at 1% is 10 GB).
 * Faster level 9: multithreaded BLAKE3 with mmap.
-* I/O strategies by media type (parallel `pread` on SSD/NVMe and object
-  stores). The plan/I/O split is there to support this.
+* More I/O strategies: parallel `pread` within large files, read-pattern
+  hints (`posix_fadvise(RANDOM)` for sparse levels; readahead inflated sparse
+  reads 1.5–2.5× in benchmark 3), and object stores. The plan/I/O split is
+  there to support this.
+* Measure levels 6–8 to place the sparse/dense boundary.
 * `--check` does not escape paths containing newlines or double spaces.
 * A duplicate-grouping mode (`--dups`) that applies the comparability rules
   above.

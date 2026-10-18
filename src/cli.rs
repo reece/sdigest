@@ -1,7 +1,7 @@
 //! The `sdigest` command line, shared by the Rust binary and the Python
 //! package's `sdigest` script so both behave identically.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, BufWriter, IsTerminal, Read, Seek, SeekFrom, Write};
@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+use crate::medium;
 use crate::{
     Coverage, DEFAULT_LEVEL, Fingerprint, LEVELS, digest_reader, open_seekable, planned_bytes,
 };
@@ -52,8 +53,31 @@ struct Args {
     #[arg(short, long)]
     quiet: bool,
 
+    /// Threads, each reading one file at a time, or auto to choose from each
+    /// file's storage and the coverage [default: auto]
+    #[arg(short, long, value_name = "N", default_value = "auto", hide_default_value = true,
+          value_parser = parse_threads)]
+    threads: Threads,
+
     /// Files to fingerprint, or fingerprint lists with --check
     files: Vec<PathBuf>,
+}
+
+/// How many threads read files.
+#[derive(Clone, Copy, Debug)]
+enum Threads {
+    Auto,
+    Fixed(usize),
+}
+
+fn parse_threads(s: &str) -> Result<Threads, String> {
+    match s {
+        "auto" => Ok(Threads::Auto),
+        _ => match s.parse::<usize>() {
+            Ok(n) if n > 0 => Ok(Threads::Fixed(n)),
+            _ => Err(format!("expected a positive number or auto, got {s:?}")),
+        },
+    }
 }
 
 /// Run the command line with `args` (including the program name) and return
@@ -104,7 +128,7 @@ fn print(args: &Args) -> Result<bool> {
         }
     };
     let jobs: Vec<_> = paths.into_iter().map(|p| (p, coverage)).collect();
-    let run = Run::execute(&jobs, args.quiet);
+    let run = Run::execute(&jobs, args.quiet, args.threads);
 
     let mut out = BufWriter::new(io::stdout().lock());
     for ((path, _), result) in jobs.iter().zip(&run.results) {
@@ -157,7 +181,7 @@ fn check(args: &Args) -> Result<bool> {
         )?;
     }
 
-    let run = Run::execute(&jobs, args.quiet);
+    let run = Run::execute(&jobs, args.quiet, args.threads);
     let mut out = BufWriter::new(io::stdout().lock());
     let mut failed = 0;
     for (((path, _), expected), result) in jobs.iter().zip(&expected).zip(&run.results) {
@@ -253,12 +277,14 @@ fn path_from_bytes(name: &[u8]) -> Result<PathBuf> {
 struct Run {
     results: Vec<Result<Fingerprint>>,
     coverages: BTreeSet<String>,
+    /// How each group of files was scheduled, e.g. "16 (sparse, rotational, queue depth 30)".
+    schedules: BTreeSet<String>,
     bytes_read: u64,
     elapsed: Duration,
 }
 
 impl Run {
-    fn execute(jobs: &[(PathBuf, Coverage)], quiet: bool) -> Run {
+    fn execute(jobs: &[(PathBuf, Coverage)], quiet: bool, policy: Threads) -> Run {
         let start = Instant::now();
         let planned: u64 = jobs
             .par_iter()
@@ -282,20 +308,52 @@ impl Run {
         let done = AtomicUsize::new(0);
         pb.set_message(format!("0/{} files", jobs.len()));
 
-        let results: Vec<_> = jobs
-            .par_iter()
-            .map(|(path, coverage)| {
-                let result = digest(path, *coverage, &pb);
-                let n = done.fetch_add(1, Ordering::Relaxed) + 1;
-                pb.set_message(format!("{n}/{} files", jobs.len()));
-                result
-            })
-            .collect();
+        let work = |i: usize| {
+            let (path, coverage) = &jobs[i];
+            let result = digest(path, *coverage, &pb);
+            let n = done.fetch_add(1, Ordering::Relaxed) + 1;
+            pb.set_message(format!("{n}/{} files", jobs.len()));
+            (i, result)
+        };
+
+        // Devices are read concurrently, each with its own number of reads in
+        // flight; within a device, groups needing different numbers (mixed
+        // coverages in a --check list) run one after another.
+        let schedule = schedule(jobs, policy);
+        let work = &work;
+        let mut indexed: Vec<(usize, Result<Fingerprint>)> = std::thread::scope(|s| {
+            let handles: Vec<_> = schedule
+                .values()
+                .map(|groups| {
+                    s.spawn(move || {
+                        let mut out = Vec::new();
+                        for ((n, _), idxs) in groups {
+                            match rayon::ThreadPoolBuilder::new().num_threads(*n).build() {
+                                Ok(pool) => out.extend(pool.install(|| {
+                                    idxs.par_iter().map(|&i| work(i)).collect::<Vec<_>>()
+                                })),
+                                Err(_) => out.extend(idxs.iter().map(|&i| work(i))),
+                            }
+                        }
+                        out
+                    })
+                })
+                .collect();
+            handles
+                .into_iter()
+                .flat_map(|h| h.join().expect("worker thread panicked"))
+                .collect()
+        });
+        indexed.sort_by_key(|(i, _)| *i);
         let bytes_read = pb.position();
         pb.finish_and_clear();
         Run {
-            results,
+            results: indexed.into_iter().map(|(_, r)| r).collect(),
             coverages: jobs.iter().map(|(_, c)| c.to_string()).collect(),
+            schedules: schedule
+                .values()
+                .flat_map(|g| g.keys().map(|(n, why)| format!("{n} ({why})")))
+                .collect(),
             bytes_read,
             elapsed: start.elapsed(),
         }
@@ -333,11 +391,45 @@ impl Run {
             HumanBytes(total),
             HumanBytes(self.bytes_read),
         );
+        summary += &format!(
+            "; threads {}",
+            self.schedules
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
         if self.errors() > 0 {
             summary += &format!("; {} errors", self.errors());
         }
         eprintln!("{summary}");
     }
+}
+
+/// Indices of jobs grouped by device, then by (threads, reason).
+type Schedule = BTreeMap<Option<u64>, BTreeMap<(usize, String), Vec<usize>>>;
+
+fn schedule(jobs: &[(PathBuf, Coverage)], policy: Threads) -> Schedule {
+    let cpus = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let mut media = HashMap::new();
+    let mut schedule = Schedule::new();
+    for (i, (path, coverage)) in jobs.iter().enumerate() {
+        let dev = medium::device_of(path);
+        let key = match policy {
+            Threads::Fixed(n) => (n, "--threads".to_string()),
+            Threads::Auto => {
+                let m = dev.and_then(|d| *media.entry(d).or_insert_with(|| medium::detect(d)));
+                medium::threads(m, *coverage, cpus)
+            }
+        };
+        schedule
+            .entry(dev)
+            .or_default()
+            .entry(key)
+            .or_default()
+            .push(i);
+    }
+    schedule
 }
 
 fn digest(path: &Path, coverage: Coverage, pb: &ProgressBar) -> Result<Fingerprint> {

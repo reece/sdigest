@@ -18,6 +18,8 @@ use std::str::FromStr;
 
 #[cfg(feature = "cli")]
 pub mod cli;
+#[cfg(feature = "cli")]
+mod medium;
 #[cfg(feature = "python")]
 mod python;
 

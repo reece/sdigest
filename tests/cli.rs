@@ -216,3 +216,44 @@ fn closed_output_pipe_exits_quietly() {
     assert_eq!(stderr(&o), "");
     assert_eq!(o.status.code(), Some(141));
 }
+
+#[test]
+fn threads_option_takes_a_number_or_auto() {
+    let dir = tempfile::tempdir().unwrap();
+    let a = dir.path().join("a");
+    fs::write(&a, b"a").unwrap();
+    let a = a.to_str().unwrap();
+
+    let o = sdigest(&["-t", "2", a]);
+    assert!(o.status.success());
+    assert!(
+        stderr(&o).contains("; threads 2 (--threads)"),
+        "{}",
+        stderr(&o)
+    );
+    assert!(sdigest(&["--threads", "auto", a]).status.success());
+    assert!(stderr(&sdigest(&[a])).contains("; threads "));
+    assert!(!sdigest(&["-t", "0", a]).status.success());
+    assert!(!sdigest(&["-t", "many", a]).status.success());
+}
+
+#[test]
+fn output_is_the_same_for_any_thread_count() {
+    let dir = tempfile::tempdir().unwrap();
+    let names: Vec<String> = (0..20)
+        .map(|i| {
+            let p = dir.path().join(format!("f{i:02}"));
+            fs::write(&p, vec![i as u8; 1000 + 70_000 * i]).unwrap();
+            p.to_str().unwrap().to_string()
+        })
+        .collect();
+    let args = |t: &'static str| {
+        let mut v = vec!["-q", "-l", "7", "-t", t];
+        v.extend(names.iter().map(String::as_str));
+        stdout(&sdigest(&v))
+    };
+    let one = args("1");
+    assert_eq!(one.lines().count(), 20);
+    assert_eq!(args("8"), one);
+    assert_eq!(args("auto"), one);
+}
