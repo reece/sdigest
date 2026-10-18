@@ -65,7 +65,7 @@ impl Seek for PyFileLike<'_> {
 fn sdigest(
     py: Python<'_>,
     source: &Bound<'_, PyAny>,
-    level: Option<u8>,
+    level: Option<i64>,
     coverage: Option<f64>,
 ) -> PyResult<String> {
     let coverage = match (level, coverage) {
@@ -73,7 +73,10 @@ fn sdigest(
             return Err(PyValueError::new_err("give level or coverage, not both"));
         }
         (None, Some(c)) => Coverage::new(c),
-        (level, None) => Coverage::from_level(level.unwrap_or(DEFAULT_LEVEL)),
+        (None, None) => Coverage::from_level(DEFAULT_LEVEL),
+        (Some(level), None) => u8::try_from(level)
+            .map_err(|_| format!("level must be 0-9, got {level}"))
+            .and_then(Coverage::from_level),
     }
     .map_err(PyValueError::new_err)?;
     if let Ok(path) = source.extract::<PathBuf>() {

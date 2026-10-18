@@ -50,8 +50,9 @@ def test_levels(data):
     assert sdigest(io.BytesIO(data), level=0).split(":")[2] == "0"
     with pytest.raises(ValueError):
         sdigest(io.BytesIO(data), 3, coverage=1)
-    with pytest.raises(ValueError):
-        sdigest(io.BytesIO(data), 10)
+    for level in [-1, 10, 300]:
+        with pytest.raises(ValueError, match=f"level must be 0-9, got {level}"):
+            sdigest(io.BytesIO(data), level)
 
 
 def test_may_equal(data):
