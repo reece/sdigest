@@ -100,6 +100,10 @@ dataset (with file count and total bytes), level, threads, cache state,
 repetition and position in the session, elapsed time, bytes requested by
 sdigest, bytes read by the process and by the device, device read count,
 effective and device rates, CPU time, exit status and a foreign-I/O flag.
+Later records add `read_ahead_kb`, and for builds with `--threads`,
+`threads_mode` (`fixed` or `auto`) and `threads_chosen` (sdigest's own
+report, e.g. `16 (sparse, rotational, queue depth 30)`). A config's
+`threads` list may include `"auto"`; those runs have `threads` = null.
 
 ### Measurements guard against cache and contention ⇐ 3
 

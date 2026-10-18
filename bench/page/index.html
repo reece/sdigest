@@ -196,7 +196,8 @@ function shortName(d) {
 }
 
 function current() {
-  return DATA.summary.filter((r) => r.version === state.version && r.host === state.host && r.cache === state.cache);
+  // Runs with --threads auto have no thread count to plot.
+  return DATA.summary.filter((r) => r.threads != null && r.version === state.version && r.host === state.host && r.cache === state.cache);
 }
 
 function render() {
@@ -245,7 +246,7 @@ function renderPanels(rows) {
   const out = [];
   TIPS = [];
   for (const g of groups(rows)) {
-    const runs = DATA.runs.filter((r) => r.version === state.version && r.host === state.host && r.cache === state.cache
+    const runs = DATA.runs.filter((r) => r.threads != null && r.version === state.version && r.host === state.host && r.cache === state.cache
       && r.level === g.level && r.dataset === g.dataset && !state.hidden.has(r.device));
     const devs = DATA.devices.map((d) => d.device).filter((dev) => g.rows.some((r) => r.device === dev));
     const series = (yKey, runKey) => devs.map((dev) => ({

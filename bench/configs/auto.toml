@@ -1,0 +1,14 @@
+# Acceptance check for --threads auto (needs a build with --threads): auto
+# against the fixed counts it should match or beat.
+reps = 3
+threads = ["auto", 1, 4, 16]
+
+[[sweep]]
+dataset = "random --seed 1 --n-files 1000 --dist loguniform --min-mb 5 --max-mb 50"
+levels = [0, 5]
+cache = "cold"
+
+[[sweep]]
+dataset = "random --seed 2 --n-files 100 --dist loguniform --min-mb 5 --max-mb 50"
+levels = [9]
+cache = "cold"

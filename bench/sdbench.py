@@ -390,6 +390,7 @@ class Build:
     version: str  # the tag if exact and clean, else describe
     dirty: bool
     release: bool  # results go to runs/ (else runs-dev/)
+    has_threads_option: bool = False  # -t/--threads (after 0.2.1); else RAYON_NUM_THREADS
 
 
 def build_sdigest(ref):
@@ -427,7 +428,8 @@ def build_sdigest(ref):
             subprocess.run(cmd, cwd=src, env=env, check=True, stdout=subprocess.DEVNULL)
             binary.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(CACHE / "target/release/sdigest", binary)
-    return Build(binary, commit, describe, version, dirty_hash is not None, release)
+    has_threads = "--threads" in sh(str(binary), "--help", check=False)
+    return Build(binary, commit, describe, version, dirty_hash is not None, release, has_threads)
 
 
 # ---------------------------------------------------------------- measuring
@@ -594,7 +596,8 @@ def cmd_run(a):
                     "n_files": len(paths),
                     "total_bytes": sum(sizes),
                     "level": level,
-                    "threads": nthreads,
+                    "threads": None if nthreads == "auto" else nthreads,
+                    "threads_mode": "auto" if nthreads == "auto" else "fixed",
                     "cache": cache,
                     "rep": rep,
                     "order": idx,
@@ -604,7 +607,7 @@ def cmd_run(a):
                 out.write(json.dumps(rec) + "\n")
                 out.flush()
                 log(
-                    f"  [{idx + 1}/{len(order)}] level {level} threads {nthreads:>2} "
+                    f"  [{idx + 1}/{len(order)}] level {level} threads {nthreads!s:>4} "
                     f"rep {rep}: {rec['elapsed_s']:.2f} s"
                     + (" (foreign I/O)" if rec["foreign_io"] else "")
                 )
@@ -619,18 +622,21 @@ def run_one(build, paths, sizes, names, level, threads, cache, disk, rotational)
     before_ru = resource.getrusage(resource.RUSAGE_CHILDREN)
     timestamp = now_utc()
     t0 = time.monotonic()
-    r = subprocess.run(
-        [build.binary, "-0", "-l", str(level)],
-        input=names,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        env={**os.environ, "RAYON_NUM_THREADS": str(threads)},
-    )
+    cmd, env = [build.binary, "-0", "-l", str(level)], dict(os.environ)
+    if build.has_threads_option:
+        cmd += ["--threads", str(threads)]
+    elif threads == "auto":
+        raise SystemExit(f"sdigest {build.version} has no --threads option, so no auto")
+    else:
+        env["RAYON_NUM_THREADS"] = str(threads)
+    r = subprocess.run(cmd, input=names, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=env)
     elapsed = time.monotonic() - t0
     ru = resource.getrusage(resource.RUSAGE_CHILDREN)
     after_disk = diskstats({disk})
     stderr = r.stderr.decode(errors="replace")
     requested = parse_read_bytes(stderr)
+    last = stderr.strip().splitlines()[-1] if stderr.strip() else ""
+    chosen = re.search(r"; threads (.+?)(?:; \d+ errors)?$", last)
     io_read = (ru.ru_inblock - before_ru.ru_inblock) * 512
     dev_read = after_disk[1] - before_disk[1]
     reads = after_disk[0] - before_disk[0]
@@ -651,6 +657,8 @@ def run_one(build, paths, sizes, names, level, threads, cache, disk, rotational)
         "cache_residual_bytes": residual,
         # The disk read noticeably more than sdigest did: someone else was reading.
         "foreign_io": dev_read > io_read * 1.05 + 4 * 2**20,
+        # What sdigest reported choosing, e.g. "16 (sparse, rotational, queue depth 30)".
+        "threads_chosen": chosen.group(1) if chosen else None,
         "stderr_tail": stderr.strip().splitlines()[-1][:300] if stderr.strip() else "",
     }
 
@@ -743,10 +751,11 @@ def cmd_report(a):
             table(
                 con,
                 f"""
-            SELECT threads, n, median_s, min_s, max_s, speedup, {rate}
+            SELECT coalesce(CAST(threads AS VARCHAR), 'auto') AS threads,
+                   n, median_s, min_s, max_s, speedup, {rate}
             FROM summary
             WHERE version=? AND host=? AND device=? AND dataset=? AND level=? AND cache=?
-            ORDER BY threads""",
+            ORDER BY summary.threads NULLS FIRST""",
                 [version, host, device, dataset, level, cache],
             )
         )
