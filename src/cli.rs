@@ -99,7 +99,11 @@ fn print(args: &Args) -> Result<bool> {
     let mut out = BufWriter::new(io::stdout().lock());
     for ((path, _), result) in jobs.iter().zip(&run.results) {
         match result {
-            Ok(fp) => writeln!(out, "{fp}  {}", path.display())?,
+            Ok(fp) => {
+                write!(out, "{fp}  ")?;
+                write_path(&mut out, path)?;
+                writeln!(out)?;
+            }
             Err(e) => {
                 out.flush()?;
                 eprintln!("sdigest: {e:#}");
@@ -116,16 +120,10 @@ fn check(args: &Args) -> Result<bool> {
     let mut jobs = Vec::new();
     let mut expected = Vec::new();
     let mut add = |name: &str, reader: &mut dyn BufRead| -> Result<()> {
-        for (i, line) in reader.lines().enumerate() {
-            let line = line?;
-            let (fp, path) = line
-                .split_once("  ")
-                .with_context(|| format!("{name}:{}: malformed line", i + 1))?;
-            let fp: Fingerprint = fp
-                .parse()
-                .map_err(anyhow::Error::msg)
+        for (i, line) in reader.split(b'\n').enumerate() {
+            let (fp, path) = parse_line(&line.with_context(|| name.to_string())?)
                 .with_context(|| format!("{name}:{}", i + 1))?;
-            jobs.push((PathBuf::from(path), fp.coverage));
+            jobs.push((path, fp.coverage));
             expected.push(fp);
         }
         Ok(())
@@ -170,6 +168,33 @@ fn check(args: &Args) -> Result<bool> {
     }
     run.summarize(args.quiet);
     Ok(failed == 0 && run.errors() == 0)
+}
+
+/// Parse a `<fingerprint>  <path>` line. The path is taken as raw bytes, so
+/// names that aren't valid UTF-8 round-trip on Unix.
+fn parse_line(line: &[u8]) -> Result<(Fingerprint, PathBuf)> {
+    let sep = line
+        .windows(2)
+        .position(|w| w == b"  ")
+        .context("malformed line")?;
+    let fp = std::str::from_utf8(&line[..sep])
+        .ok()
+        .context("malformed line")?
+        .parse()
+        .map_err(anyhow::Error::msg)?;
+    Ok((fp, path_from_bytes(&line[sep + 2..])?))
+}
+
+/// Write a path as its raw bytes on Unix, so lists hold the real name.
+#[cfg(unix)]
+fn write_path(out: &mut impl Write, path: &Path) -> io::Result<()> {
+    use std::os::unix::ffi::OsStrExt;
+    out.write_all(path.as_os_str().as_bytes())
+}
+
+#[cfg(not(unix))]
+fn write_path(out: &mut impl Write, path: &Path) -> io::Result<()> {
+    write!(out, "{}", path.display())
 }
 
 fn stdin_or_bail() -> Result<io::Stdin> {

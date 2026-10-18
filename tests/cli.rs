@@ -150,3 +150,27 @@ fn summary_on_stderr_unless_quiet() {
 
     assert_eq!(stderr(&sdigest(&["-q", a])), "");
 }
+
+#[cfg(unix)]
+#[test]
+fn check_handles_non_utf8_names() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let a = dir.path().join(OsStr::from_bytes(b"a\xff"));
+    let sums = dir.path().join("sums");
+    fs::write(&a, b"hello").unwrap();
+
+    let o = Command::new(env!("CARGO_BIN_EXE_sdigest"))
+        .arg(&a)
+        .output()
+        .unwrap();
+    assert!(o.status.success());
+    assert!(o.stdout.ends_with(b"a\xff\n"), "{:?}", o.stdout);
+    fs::write(&sums, o.stdout).unwrap();
+
+    let o = sdigest(&["--check", sums.to_str().unwrap()]);
+    assert!(o.status.success(), "{}", stderr(&o));
+    assert!(String::from_utf8_lossy(&o.stdout).ends_with(": OK\n"));
+}
