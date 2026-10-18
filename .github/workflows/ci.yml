@@ -25,7 +25,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal -c clippy,rustfmt && rustup default stable
       - uses: Swatinem/rust-cache@v2.9.2
       - uses: astral-sh/setup-uv@v10.2.0
-      - uses: taiki-e/install-action@v2.87.22
+      - uses: taiki-e/install-action@v2.87.28
         with:
           tool: just@1.58.0
       - name: Lint (pull requests check changed files; pushes check all files)
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
       - uses: Swatinem/rust-cache@v2.9.2
-      - uses: taiki-e/install-action@v2.87.22
+      - uses: taiki-e/install-action@v2.87.28
         with:
           tool: just@1.58.0
       - run: just test-rust
@@ -62,7 +62,7 @@ jobs:
           msrv=$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)
           rustup toolchain install "$msrv" --profile minimal && rustup default "$msrv"
       - uses: Swatinem/rust-cache@v2.9.2
-      - uses: taiki-e/install-action@v2.87.22
+      - uses: taiki-e/install-action@v2.87.28
         with:
           tool: just@1.58.0
       - run: just test-rust
@@ -85,7 +85,7 @@ jobs:
       - uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: ${{ matrix.python }}
-      - uses: taiki-e/install-action@v2.87.22
+      - uses: taiki-e/install-action@v2.87.28
         with:
           tool: just@1.58.0
       - run: just test-python
@@ -97,7 +97,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal && rustup default stable
       - uses: Swatinem/rust-cache@v2.9.2
       - uses: astral-sh/setup-uv@v10.2.0
-      - uses: taiki-e/install-action@v2.87.22
+      - uses: taiki-e/install-action@v2.87.28
         with:
           tool: just@1.58.0
       - run: just build
