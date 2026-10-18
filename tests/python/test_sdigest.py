@@ -108,7 +108,9 @@ def test_script_is_installed():
 def test_script_matches_binary(tmp_path, data):
     p = tmp_path / "f"
     p.write_bytes(data)
-    for args in (["-l", "0", str(p)], ["-q", "-c", "2.5", str(p)], ["--version"]):
+    # Not --version: separately built dev copies can differ (e.g. ".dirty");
+    # test_version_matches_script checks the script's own version instead.
+    for args in (["-l", "0", str(p)], ["-q", "-c", "2.5", str(p)]):
         script, binary = run_both(*args)
         assert script.returncode == binary.returncode == 0
         assert script.stdout == binary.stdout
