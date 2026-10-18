@@ -208,8 +208,9 @@ whole 176 GiB archive; that run was mostly served from the page cache.
 
 Conditions: sdigest 0.2.1, release build; 4-core Linux host; Seagate
 Expansion Desk 4.5 TB hard disk (`uas`, queue depth 30, mq-deadline), ext4;
-mean of two runs. Threads were set with `RAYON_NUM_THREADS`; the default is
-one per core (4 here). Full data and method are in
+mean of two runs. Threads were set with `RAYON_NUM_THREADS`; the default
+then was one per core (4 here). It is now chosen per device (see
+[Parallelism](#parallelism)). Full data and method are in
 [#3](https://github.com/reece/sdigest/issues/3).
 
 Level 0, 3,534 audio files, 28.1 GiB (7,068 reads of 64 KiB):
