@@ -1,6 +1,8 @@
 *.so
 .venv/
+/bench/page/data.json
 /bench/runs-dev/
 /dist/
 /target
+__marimo__/
 __pycache__/

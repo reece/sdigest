@@ -119,10 +119,13 @@ effective and device rates, CPU time, exit status and a foreign-I/O flag.
 1. **Terminal.** `sdbench ls | report | compare A B | sql QUERY` print
    markdown, ready to paste into an issue. `sdbench db FILE` writes
    everything to a DuckDB file for `duckdb` or `duckdb -ui`.
-2. **Notebook.** A marimo notebook in `bench/notebooks/` (plain `.py`),
-   with interactive filters and the standard plots.
-3. **Page.** A self-contained page that loads the committed records in the
-   browser with DuckDB-WASM.
+2. **Notebook.** `bench/notebooks/explore.py`, a marimo notebook (plain
+   `.py`) with interactive filters and the standard plots:
+   `uv run marimo edit --sandbox bench/notebooks/explore.py`.
+3. **Page.** `bench/page/index.html`, a self-contained results page.
+   `sdbench export bench/page/data.json` writes its data from the views;
+   the page only filters and draws. It doesn't run DuckDB in the browser,
+   because hosted pages may block the workers and fetches that would need.
 
 All three query the views in `bench/queries/views.sql`.
 

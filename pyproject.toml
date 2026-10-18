@@ -57,3 +57,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# marimo cells display their last expression.
+"bench/notebooks/*" = ["B018"]

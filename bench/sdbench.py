@@ -10,7 +10,7 @@ Results are append-only JSON Lines under bench/; see doc/benchmarking.md.
     sdbench gen random --seed 1 --n-files 100 --dist loguniform --min-mb 5 --max-mb 50 \\
         --data-dir DIR
     sdbench run --ref 0.2.1 --config bench/configs/firstpass.toml --data-dir DIR
-    sdbench ls | report | compare A B | sql QUERY | db PATH
+    sdbench ls | report | compare A B | sql QUERY | db PATH | export PATH
 """
 
 import argparse
@@ -722,7 +722,13 @@ def cmd_report(a):
     for version, host, device, dataset, level, cache in groups:
         print(f"\n### {device}, level {level}, {cache} cache\n")
         print(f"sdigest {version}, host {host}, dataset `{dataset}`\n")
-        rate = "median_reads_per_s" if level < 9 else "median_read_mib_s"
+        rate = (
+            "median_effective_mib_s"
+            if cache == "warm"
+            else "median_reads_per_s"
+            if level < 9
+            else "median_read_mib_s"
+        )
         print(
             table(
                 con,
@@ -756,6 +762,29 @@ def cmd_db(a):
     Path(a.path).unlink(missing_ok=True)
     connect(a.dev, a.path).close()
     log(f"wrote {a.path}; open with: duckdb {a.path}  (or duckdb -ui {a.path})")
+
+
+def cmd_export(a):
+    """Write the views a static page needs as one JSON file."""
+    con = connect(a.dev)
+
+    def rows(query):
+        rel = con.execute(query)
+        cols = [d[0] for d in rel.description]
+        return [dict(zip(cols, r, strict=True)) for r in rel.fetchall()]
+
+    data = {
+        "generated": iso(now_utc()),
+        "summary": rows("SELECT * FROM summary ORDER BY ALL"),
+        "runs": rows("""SELECT version, host, device, dataset, level, cache, threads, rep,
+                               elapsed_s, device_reads_per_s, rate_read_mib_s
+                        FROM good_runs ORDER BY ALL"""),
+        "devices": rows("SELECT * FROM devices ORDER BY device"),
+        "datasets": rows("SELECT * FROM datasets ORDER BY dataset"),
+        "hosts": rows("SELECT * FROM hosts ORDER BY host"),
+    }
+    Path(a.path).write_text(json.dumps(data, default=str) + "\n")
+    log(f"wrote {a.path}: {len(data['runs'])} runs")
 
 
 def cmd_sql(a):
@@ -801,6 +830,11 @@ def main():
     q.add_argument("query")
     q.add_argument("--dev", action="store_true")
     q.set_defaults(func=cmd_sql)
+
+    e = sub.add_parser("export", help="write results as JSON for the results page")
+    e.add_argument("path")
+    e.add_argument("--dev", action="store_true")
+    e.set_defaults(func=cmd_export)
 
     d = sub.add_parser("db", help="write all results to a DuckDB file for other tools")
     d.add_argument("path")
