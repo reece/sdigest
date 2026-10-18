@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "samsung-ssd-970-evo-plus-0001",
+  "identity": {
+    "model": "Samsung SSD 970 EVO Plus 2TB",
+    "transport": "nvme",
+    "usb_driver": null,
+    "link": "8.0 GT/s PCIe x4",
+    "rotational": false,
+    "queue_depth": null,
+    "scheduler": "none",
+    "layers": [
+      "part",
+      "disk"
+    ],
+    "fstype": "ext4",
+    "size": "1.8T"
+  }
+}

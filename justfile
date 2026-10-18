@@ -46,3 +46,8 @@ clean:
     cargo clean
     rm -rf dist .pytest_cache .ruff_cache
     find . -path ./.venv -prune -o -name __pycache__ -type d -exec rm -rf {} +
+
+# Benchmark harness: e.g. `just bench report`, `just bench run --ref 0.2.1 ...`
+[group('bench')]
+bench *args:
+    uv run --script bench/sdbench.py {{ args }}

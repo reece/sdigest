@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "kevin-0001",
+  "identity": {
+    "hostname": "kevin",
+    "cpu_model": "Intel(R) N150",
+    "cpu_threads": 4,
+    "mem_gib": 15,
+    "kernel": "7.0",
+    "os": "ubuntu 26.04"
+  }
+}

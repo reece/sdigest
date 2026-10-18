@@ -42,6 +42,16 @@ repos:
         entry: sh -c 'LC_ALL=C sort -u -o .gitignore .gitignore'
         language: system
         files: ^\.gitignore$
+      - id: bench-append-only
+        name: Benchmark records are append-only
+        entry: >-
+          sh -c 'git diff --cached --name-only --diff-filter=MR --
+          bench/runs bench/hosts bench/devices bench/datasets bench/annotations
+          | grep . && { echo "modify nothing above; append new files instead
+          (deleting to prune is fine)"; exit 1; } || exit 0'
+        language: system
+        files: ^bench/(runs|hosts|devices|datasets|annotations)/
+        pass_filenames: false
       - id: cargo-fmt
         name: cargo fmt
         entry: cargo fmt --all

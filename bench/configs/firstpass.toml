@@ -1,0 +1,16 @@
+# First pass over storage media (#3): thread sweeps at sparse, 1% and full
+# coverage. About 1 hour per hard disk; minutes on an SSD.
+reps = 3
+threads = [1, 2, 4, 8, 16, 32, 64]
+
+# Sparse and 1% coverage: 1,000 audio-sized files, about 19.5 GB.
+[[sweep]]
+dataset = "random --seed 1 --n-files 1000 --dist loguniform --min-mb 5 --max-mb 50"
+levels = [0, 5]
+cache = "cold"
+
+# Full reads: 100 files, about 2 GB.
+[[sweep]]
+dataset = "random --seed 2 --n-files 100 --dist loguniform --min-mb 5 --max-mb 50"
+levels = [9]
+cache = "cold"

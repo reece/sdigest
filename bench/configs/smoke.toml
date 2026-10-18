@@ -1,0 +1,8 @@
+# A quick check that the harness works: about a minute on an SSD.
+reps = 2
+threads = [1, 4]
+
+[[sweep]]
+dataset = "random --seed 1 --n-files 20 --dist loguniform --min-mb 0.1 --max-mb 5"
+levels = [0, 9]
+cache = "cold"
