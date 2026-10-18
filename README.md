@@ -87,10 +87,17 @@ For Rust library use without the CLI dependencies, use
 
 ## Development
 
+Tasks are [`just`](https://just.systems) recipes, and CI runs the same ones.
+Install `just` with `uv tool install rust-just`, `cargo install just`, or
+your package manager.
+
 ```sh
-cargo test                  # Rust unit and CLI tests
-uv run pytest               # builds the Python extension and runs Python tests
-prek install                # lint and format on commit (prek run --all-files to run now)
+just                        # list recipes
+just devready               # create .venv (builds the extension) and install git hooks
+just cqa                    # lockfile, lint and format checks on all files
+just cqa --from-ref main    # ... or only on files changed since main
+just test                   # Rust and Python tests
+just build                  # check packaging: crate, sdist, wheel
 ```
 
 Releases: push a semver tag, e.g. `git tag 1.2.3 && git push --tags` (no

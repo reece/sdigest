@@ -30,7 +30,8 @@ Homepage = "https://github.com/reece/sdigest"
 Issues = "https://github.com/reece/sdigest/issues"
 
 [dependency-groups]
-dev = ["maturin>=1.7,<2", "pytest>=8"]
+dev = ["maturin>=1.7,<2", "pytest>=8", { include-group = "lint" }]
+lint = ["prek>=0.5"]
 
 [tool.maturin]
 features = ["python"]
