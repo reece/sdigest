@@ -58,7 +58,8 @@ struct Args {
 
 /// Run the command line with `args` (including the program name) and return
 /// the exit status. Usage errors, `--help` and `--version` exit the process
-/// directly, as clap does.
+/// directly, as clap does. A closed output pipe ends the run quietly with
+/// status 141.
 pub fn run<I, T>(args: I) -> u8
 where
     I: IntoIterator<Item = T>,
@@ -73,6 +74,15 @@ where
     match result {
         Ok(true) => 0,
         Ok(false) => 1,
+        // The reader went away (`sdigest ... | head`): stop quietly, with the
+        // status a shell reports for a process killed by SIGPIPE.
+        Err(e)
+            if e.root_cause()
+                .downcast_ref::<io::Error>()
+                .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe) =>
+        {
+            141
+        }
         Err(e) => {
             eprintln!("sdigest: {e:#}");
             1

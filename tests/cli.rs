@@ -196,3 +196,22 @@ fn check_skips_malformed_lines() {
     assert!(err.contains(&format!("{sums}:3: malformed line")), "{err}");
     assert!(err.contains("2 line(s) are improperly formatted"), "{err}");
 }
+
+#[test]
+fn closed_output_pipe_exits_quietly() {
+    let dir = tempfile::tempdir().unwrap();
+    let a = dir.path().join("a");
+    fs::write(&a, b"a").unwrap();
+    let (reader, writer) = std::io::pipe().unwrap();
+    drop(reader);
+
+    let o = Command::new(env!("CARGO_BIN_EXE_sdigest"))
+        .arg("-q")
+        .arg(&a)
+        .stdout(writer)
+        .stderr(Stdio::piped())
+        .output()
+        .unwrap();
+    assert_eq!(stderr(&o), "");
+    assert_eq!(o.status.code(), Some(141));
+}

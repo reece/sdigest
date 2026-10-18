@@ -137,6 +137,12 @@ had malformed lines (they are skipped with a warning), or another error occurred
 .TP
 .B 2
 Invalid usage.
+.TP
+.B 141
+Standard output was closed early (for example, piped to
+.BR head ).
+No error is printed, as for a process killed by
+.BR SIGPIPE .
 .SH EXAMPLES
 Fingerprint an audio collection at level 0 and save the result:
 .PP
