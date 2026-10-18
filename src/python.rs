@@ -94,7 +94,8 @@ fn sdigest(
 }
 
 /// False if two fingerprints prove the content differs, True if it may be
-/// identical, None if they aren't comparable (same size, different coverage).
+/// identical, None if they aren't comparable (same size, and the two
+/// coverages sample different blocks).
 #[pyfunction]
 fn may_equal(a: &str, b: &str) -> PyResult<Option<bool>> {
     let parse = |s: &str| s.parse::<Fingerprint>().map_err(PyValueError::new_err);
