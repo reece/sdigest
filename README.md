@@ -17,10 +17,15 @@ sd1:28011203:0:03ab…c9d0  c.flac
 sdigest: 3 files, 85.7 MiB in 0.01 s (8.4 GiB/s); coverage 0%, read 384 KiB (0.437%)
 ```
 
-On a 176 GiB audio archive on a USB hard disk, level 0 fingerprinted all
-16,167 files in 10 s. On the 911 files that share a size with another file,
-it found exactly the same possible duplicates as full digests did, which
-took 412 s.
+On a USB 3 hard disk with a cold page cache, level 0 fingerprinted 3,534
+audio files (28.1 GiB) in 56 s. Its cost depends on the number of files,
+not their size: two 64 KiB reads per file, at the 100–170 reads per second
+this disk managed. Full reads on the same drive ran at about 140 MiB/s, so
+level 0 wins for files over about 2 MB, by more as files grow. On a 176 GiB
+archive, level 0 found exactly the same possible duplicates as full digests
+did. Details and conditions are in the
+[design notes](https://github.com/reece/sdigest/blob/main/doc/design.md#results)
+and [#3](https://github.com/reece/sdigest/issues/3).
 
 ## Interpreting sdigests
 

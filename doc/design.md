@@ -163,18 +163,48 @@ may_equal(fp, sdigest(open("b.flac", "rb"), level=0))  # True/False/None
 
 ## Results
 
-Audio archive on a USB hard disk (ext4), 16,167 files, 176 GiB.
-911 files share a size with at least one other file (389 sizes).
+### Speed
 
-| Run | Time | Read |
+All times are with a cold page cache: each run's files were dropped from
+the cache with `posix_fadvise(POSIX_FADV_DONTNEED)` first, and the disk was
+idle. Earlier versions of this document quoted 9.6 s for level 0 over a
+whole 176 GiB archive; that run was mostly served from the page cache.
+
+Conditions: sdigest 0.2.1, release build; 4-core Linux host; Seagate
+Expansion Desk 4.5 TB hard disk (`uas`, queue depth 30, mq-deadline), ext4;
+mean of two runs. Threads were set with `RAYON_NUM_THREADS`; the default is
+one per core (4 here). Full data and method are in
+[#3](https://github.com/reece/sdigest/issues/3).
+
+Level 0, 3,534 audio files, 28.1 GiB (7,068 reads of 64 KiB):
+
+| Threads | USB 2 | USB 3 |
 |---|---|---|
-| Level 0, all files | 9.6 s | 1.97 GiB |
-| Level 9, 911 same-size files | 412 s | 16.7 GiB |
+| 1 | 68.4 s | 58.7 s |
+| 4 (default) | 52.2 s | 56.1 s |
+| 16 | 44.8 s | 41.1 s |
 
-Level 0 and level 9 sort the 911 same-size files into exactly the same
-possibly-identical groups (336 files): **no false positives**. For comparison,
-`sha512sum` runs at ~0.4 GiB/s on cached data. Level 9 runs at 1.6–3 GiB/s;
-level 0 is limited by seeks, not hashing.
+Level 9 (full reads), a random sample of about 265 of those files, 2.0 GiB:
+
+| Threads | USB 2 | USB 3 |
+|---|---|---|
+| 1 | 38.9 MiB/s | 122 MiB/s |
+| 4 (default) | 36.9 MiB/s | 138 MiB/s |
+| 16 | 37.6 MiB/s | 122 MiB/s |
+
+Level 0 is limited by seek time, so it costs about the same per file
+whatever the file size; more reads in flight help. Level 9 is limited by the
+USB 2 link (about 40 MiB/s), or on USB 3 by the drive; parallelism barely
+helps it. On cached data, hashing is not the bottleneck: level 9 runs at
+1.6–3 GiB/s, against ~0.4 GiB/s for `sha512sum`.
+
+### Accuracy
+
+Audio archive on the same disk, 16,167 files, 176 GiB. 911 files share a
+size with at least one other file (389 sizes). Level 0 and level 9 sort
+those 911 files into exactly the same possibly-identical groups (336
+files): **no false positives**. (Level 9 read 16.7 GiB in 412 s over USB 2,
+about the link's limit.)
 
 ## Unresolved questions and future work
 
