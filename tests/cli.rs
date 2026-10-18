@@ -151,7 +151,8 @@ fn summary_on_stderr_unless_quiet() {
     assert_eq!(stderr(&sdigest(&["-q", a])), "");
 }
 
-#[cfg(unix)]
+// APFS refuses names that aren't valid UTF-8, so macOS can't create the file.
+#[cfg(all(unix, not(target_os = "macos")))]
 #[test]
 fn check_handles_non_utf8_names() {
     use std::ffi::OsStr;
