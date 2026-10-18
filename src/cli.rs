@@ -115,16 +115,24 @@ fn print(args: &Args) -> Result<bool> {
     Ok(run.errors() == 0)
 }
 
-/// Verify `<fingerprint>  <path>` lines. Returns false on any mismatch or error.
+/// Verify `<fingerprint>  <path>` lines, skipping malformed ones with a
+/// warning. Returns false on any mismatch, error or malformed line.
 fn check(args: &Args) -> Result<bool> {
     let mut jobs = Vec::new();
     let mut expected = Vec::new();
+    let mut malformed = 0;
     let mut add = |name: &str, reader: &mut dyn BufRead| -> Result<()> {
         for (i, line) in reader.split(b'\n').enumerate() {
-            let (fp, path) = parse_line(&line.with_context(|| name.to_string())?)
-                .with_context(|| format!("{name}:{}", i + 1))?;
-            jobs.push((path, fp.coverage));
-            expected.push(fp);
+            match parse_line(&line.with_context(|| name.to_string())?) {
+                Ok((fp, path)) => {
+                    jobs.push((path, fp.coverage));
+                    expected.push(fp);
+                }
+                Err(e) => {
+                    eprintln!("sdigest: {name}:{}: {e:#}", i + 1);
+                    malformed += 1;
+                }
+            }
         }
         Ok(())
     };
@@ -166,13 +174,17 @@ fn check(args: &Args) -> Result<bool> {
             run.errors()
         );
     }
+    if malformed > 0 {
+        eprintln!("sdigest: WARNING: {malformed} line(s) are improperly formatted");
+    }
     run.summarize(args.quiet);
-    Ok(failed == 0 && run.errors() == 0)
+    Ok(failed == 0 && run.errors() == 0 && malformed == 0)
 }
 
-/// Parse a `<fingerprint>  <path>` line. The path is taken as raw bytes, so
+/// Parse a `<fingerprint>  <path>` line, ignoring a trailing CR. The path is taken as raw bytes, so
 /// names that aren't valid UTF-8 round-trip on Unix.
 fn parse_line(line: &[u8]) -> Result<(Fingerprint, PathBuf)> {
+    let line = line.strip_suffix(b"\r").unwrap_or(line);
     let sep = line
         .windows(2)
         .position(|w| w == b"  ")

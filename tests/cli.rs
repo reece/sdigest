@@ -174,3 +174,25 @@ fn check_handles_non_utf8_names() {
     assert!(o.status.success(), "{}", stderr(&o));
     assert!(String::from_utf8_lossy(&o.stdout).ends_with(": OK\n"));
 }
+
+#[test]
+fn check_skips_malformed_lines() {
+    let dir = tempfile::tempdir().unwrap();
+    let a = dir.path().join("a");
+    let sums = dir.path().join("sums");
+    fs::write(&a, b"hello").unwrap();
+    let a = a.to_str().unwrap();
+    let sums = sums.to_str().unwrap();
+    let line = stdout(&sdigest(&[a]));
+    // CRLF line ending, a blank line, and a truncated line.
+    let crlf = line.replace('\n', "\r\n");
+    fs::write(sums, format!("{crlf}\n{}", &line[..20])).unwrap();
+
+    let o = sdigest(&["--check", sums]);
+    assert!(!o.status.success());
+    assert_eq!(stdout(&o), format!("{a}: OK\n"));
+    let err = stderr(&o);
+    assert!(err.contains(&format!("{sums}:2: malformed line")), "{err}");
+    assert!(err.contains(&format!("{sums}:3: malformed line")), "{err}");
+    assert!(err.contains("2 line(s) are improperly formatted"), "{err}");
+}
