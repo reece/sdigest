@@ -36,7 +36,7 @@ jobs:
       - if: steps.exists.outputs.published != 'true'
         run: .github/scripts/stamp-version
       - if: steps.exists.outputs.published != 'true'
-        uses: rust-lang/crates-io-auth-action@v1.0.5
+        uses: rust-lang/crates-io-auth-action@v1.0.6
         id: auth
       - if: steps.exists.outputs.published != 'true'
         run: cargo publish --locked --allow-dirty
