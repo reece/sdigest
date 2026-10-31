@@ -23,7 +23,7 @@ jobs:
           # Pull requests lint only the files they change, which needs the base branch.
           fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
       - run: rustup toolchain install stable --profile minimal -c clippy,rustfmt && rustup default stable
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - uses: astral-sh/setup-uv@v10.2.0
       - uses: taiki-e/install-action@v2.87.22
         with:
@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - uses: taiki-e/install-action@v2.87.22
         with:
           tool: just@1.58.0
@@ -61,7 +61,7 @@ jobs:
         run: |
           msrv=$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)
           rustup toolchain install "$msrv" --profile minimal && rustup default "$msrv"
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - uses: taiki-e/install-action@v2.87.22
         with:
           tool: just@1.58.0
@@ -81,7 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: ${{ matrix.python }}
@@ -95,7 +95,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - run: rustup toolchain install stable --profile minimal && rustup default stable
-      - uses: Swatinem/rust-cache@v2.9.2
+      - uses: Swatinem/rust-cache@v2.9.3
       - uses: astral-sh/setup-uv@v10.2.0
       - uses: taiki-e/install-action@v2.87.22
         with:
